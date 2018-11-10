@@ -1,15 +1,15 @@
 type ty =
-  | TyBool
+  | TyTop
   | TyArrow of ty * ty
+  | TyRecord of (string * ty) list
 ;;
 
 type term =
-  | TmTrue
-  | TmFalse
-  | TmIf of term * term * term
   | TmVar of int
   | TmAbs of ty * term
   | TmApp of term * term
+  | TmRecord of (string * term) list
+  | TmProj of term * string
 ;;
 
 type binding = VarBind of ty;;
@@ -25,28 +25,40 @@ let getTypeFromContext ctx n = match getbinding ctx n with
   | VarBind ty1 -> ty1
 ;;
 
+let rec subtype tys tyt = match tys, tyt with
+  | _, _ when tys = tyt -> true
+  | _, TyTop -> true
+  | TyArrow (tysp, tysr), TyArrow (tytp, tytr) ->
+          subtype tytp tysp && subtype tysr tytr
+  | TyRecord kvs, TyRecord kvt ->
+          let f (k, vt) =
+              try (let vs = List.assoc k kvs in subtype vs vt)
+              with Not_found -> false
+          in
+          List.for_all f kvt
+  | _, _ -> false
+;;
+
 exception TypeError;;
 let rec typeOf ctx = function
-  | TmTrue -> TyBool
-  | TmFalse -> TyBool
-  | TmIf (t1, t2, t3) ->
-          if TyBool != typeOf ctx t1
-          then raise TypeError
-          else
-              let ty2 = typeOf ctx t2 in
-              let ty3 = typeOf ctx t3 in
-              if ty2 != ty3
-              then raise TypeError
-              else ty2
   | TmVar n -> getTypeFromContext ctx n
-  | TmAbs (tya, tb) ->
-          let ctx' = addbinding ctx (VarBind tya) in
+  | TmAbs (typ, tb) ->
+          let ctx' = addbinding ctx (VarBind typ) in
           let tyr = typeOf ctx' tb in
-          TyArrow (tya, tyr)
+          TyArrow (typ, tyr)
   | TmApp (t1, t2) ->
-          let ty1 = typeOf ctx t1 in
-          let ty2 = typeOf ctx t2 in
-          match ty1 with
-            | TyArrow (tya, tyr) when ty2 = tya -> tyr
-            | _ -> raise TypeError
+          let tyf = typeOf ctx t1 in
+          let tya = typeOf ctx t2 in
+          (match tyf with
+             | TyArrow (typ, tyr) when typ = tya -> tyr
+             | _ -> raise TypeError)
+  | TmRecord kv ->
+          let f (k, v) = (k, typeOf ctx v) in
+          TyRecord (List.map f kv)
+  | TmProj (t1, k) ->
+          (match typeOf ctx t1 with
+             | TyRecord kv ->
+                     (try List.assoc k kv
+                      with Not_found -> raise TypeError)
+             | _ -> raise TypeError)
 ;;
