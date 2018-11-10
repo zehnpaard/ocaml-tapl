@@ -25,3 +25,21 @@ let termSubst j s t =
 let termSubstTop s t =
     termShift (-1) (termSubst 0 (termShift 1 s) t)
 ;;
+
+let isval = function
+  | TmAbs _ -> true
+  | _ -> false
+;;
+
+exception NoRuleApplies;;
+let rec eval1 = function
+  | TmApp (TmAbs t1, t2) when isval t2 -> termSubstTop t2 t1
+  | TmApp (t1, t2) when isval t1 -> TmApp (t1, eval1 t2)
+  | TmApp (t1, t2) -> TmApp (eval1 t1, t2)
+  | _ -> raise NoRuleApplies
+;;
+
+let rec eval t =
+    try (let t' = eval1 t in eval t')
+    with NoRuleApplies -> t
+;;
