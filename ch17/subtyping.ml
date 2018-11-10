@@ -1,15 +1,15 @@
 type ty =
-  | TyBool
+  | TyTop
   | TyArrow of ty * ty
+  | TyRecord of (string * ty) list
 ;;
 
 type term =
-  | TmTrue
-  | TmFalse
-  | TmIf of term * term * term
   | TmVar of int
   | TmAbs of ty * term
   | TmApp of term * term
+  | TmRecord of (string * term) list
+  | TmProj of term * string
 ;;
 
 type binding = VarBind of ty;;
