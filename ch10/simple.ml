@@ -12,6 +12,19 @@ type term =
   | TmApp of term * term
 ;;
 
+type binding = VarBind of ty;;
+type context = (string * binding) list;;
+
+exception BindingError;;
+let addbinding ctx bind = bind::ctx;;
+let rec getbinding ctx n = match ctx, n with
+  | [], _ -> raise BindingError
+  | b::ctx', n -> if n = 0 then b else getbinding ctx' (n - 1)
+;;
+let getTypeFromContext ctx n = match getbinding ctx n with
+  | VarBind ty1 -> ty1
+;;
+
 exception TypeError;;
 let rec typeOf ctx = function
   | TmTrue -> TyBool
