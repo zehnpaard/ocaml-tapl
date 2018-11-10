@@ -25,6 +25,20 @@ let getTypeFromContext ctx n = match getbinding ctx n with
   | VarBind ty1 -> ty1
 ;;
 
+let rec subtype tys tyt = match tys, tyt with
+  | _, _ when tys = tyt -> true
+  | _, TyTop -> true
+  | TyArrow (tysp, tysr), TyArrow (tytp, tytr) ->
+          subtype tytp tysp && subtype tysr tytr
+  | TyRecord kvs, TyRecord kvt ->
+          let f (k, vt) =
+              try (let vs = List.assoc k kvs in subtype vs vt)
+              with Not_found -> false
+          in
+          List.for_all f kvt
+  | _, _ -> false
+;;
+
 exception TypeError;;
 let rec typeOf ctx = function
   | TmTrue -> TyBool
