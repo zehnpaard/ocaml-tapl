@@ -101,3 +101,28 @@ let termSubstTop s t =
 let tytermSubstTop tys t =
     termShift (-1) (tytermSubst (typeShift 1 tys) 0 t)
 ;;
+
+
+let isval = function
+  | TmAbs _ -> true
+  | _ -> false
+;;
+
+exception NoRuleApplies;;
+let rec eval1 = function
+  | TmApp (TmAbs (_, t1), t2) when isval t2 -> termSubstTop t2 t1
+  | TmApp (t1, t2) when isval t1 -> TmApp (t1, eval1 t2)
+  | TmApp (t1, t2) -> TmApp (eval1 t1, t2)
+  | TmTApp (TmTAbs t1, ty2) -> tytermSubstTop ty2 t1
+  | TmTApp (t1, ty2) -> TmTApp (eval1 t1, ty2)
+  | TmUnpack (TmPack (ty1, t1, _), t2) when isval t1 ->
+          tytermSubstTop ty1 (termSubstTop (termShift 1 t1) t2)
+  | TmUnpack (t1, t2) -> TmUnpack (eval1 t1, t2)
+  | TmPack (ty1, t2, ty3) -> TmPack (ty1, eval1 t2, ty3)
+  | _ -> raise NoRuleApplies
+;;
+
+let rec eval t =
+    try (let t' = eval1 t in eval t')
+    with NoRuleApplies -> t
+;;
