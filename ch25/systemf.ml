@@ -54,3 +54,16 @@ type term =
   | TmPack of ty * term * ty
   | TmUnpack of term * term
 ;;
+
+let tmmap onvar ontype c t =
+  let rec walk c t = match t with
+    | TmVar x -> onvar c x
+    | TmAbs (ty1, t1) -> TmAbs (ontype c ty1, walk (c+1) t1)
+    | TmApp (t1, t2) -> TmApp (walk c t1, walk c t2)
+    | TmTAbs t1 -> TmTAbs (walk (c+1) t1)
+    | TmTApp (t1, ty1) -> TmTApp (walk c t1, ontype c ty1)
+    | TmPack (ty1, t2, ty3) -> TmPack (ontype c ty1, walk c t2, ontype c ty3)
+    | TmUnpack (t1, t2) -> TmUnpack (walk c t1, walk (c+2) t2)
+  in
+  walk c t
+;;
