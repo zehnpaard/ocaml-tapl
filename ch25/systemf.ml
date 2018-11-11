@@ -9,6 +9,19 @@ type binding =
   | VarBind of ty
   | TyVarBind
 ;;
+type context = (string * binding) list;;
+
+exception BindingError;;
+let addbinding ctx bind = bind::ctx;;
+let rec getbinding ctx n = match ctx, n with
+  | [], _ -> raise BindingError
+  | b::ctx', n -> if n = 0 then b else getbinding ctx' (n - 1)
+;;
+let getTypeFromContext ctx n = match getbinding ctx n with
+  | VarBind ty1 -> ty1
+  | _ -> raise BindingError
+;;
+
 
 let tymap onvar c tyt =
   let rec walk c tyt = match tyt with
@@ -126,3 +139,6 @@ let rec eval t =
     try (let t' = eval1 t in eval t')
     with NoRuleApplies -> t
 ;;
+
+
+
