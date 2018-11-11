@@ -67,3 +67,14 @@ let tmmap onvar ontype c t =
   in
   walk c t
 ;;
+
+let termShiftAbove d c t =
+    let f c x =
+        if x >= c
+        then TmVar (x+d)
+        else TmVar x
+    in
+    tmmap f (typeShiftAbove d) c t
+;;
+
+let termShift d t = termShiftAbove d 0 t;;
