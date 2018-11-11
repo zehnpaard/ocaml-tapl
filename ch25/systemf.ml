@@ -78,3 +78,13 @@ let termShiftAbove d c t =
 ;;
 
 let termShift d t = termShiftAbove d 0 t;;
+
+let termSubst j s t =
+    let f j x =
+        if x = j
+        then termShift j s
+        else TmVar x
+    in
+    let g j t = t in
+    tmmap f g j t
+;;
