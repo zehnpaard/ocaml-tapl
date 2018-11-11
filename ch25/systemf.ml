@@ -28,3 +28,18 @@ let typeShiftAbove d c tyt =
     in
     tymap f c tyt
 ;;
+
+let typeShift d tyt = typeShiftAbove d 0 tyt;;
+
+let typeSubst tys j tyt =
+    let f j x =
+        if x = j
+        then typeShift j tys
+        else TyVar x
+    in
+    tymap f j tyt
+;;
+
+let typeSubstTop tys tyt =
+    typeShift (-1) (typeSubst (typeShift 1 tys) 0 tyt)
+;;
