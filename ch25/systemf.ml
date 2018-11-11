@@ -43,3 +43,14 @@ let typeSubst tys j tyt =
 let typeSubstTop tys tyt =
     typeShift (-1) (typeSubst (typeShift 1 tys) 0 tyt)
 ;;
+
+
+type term =
+  | TmVar of int
+  | TmAbs of ty * term
+  | TmApp of term * term
+  | TmTAbs of term
+  | TmTApp of term * ty
+  | TmPack of ty * term * ty
+  | TmUnpack of term * term
+;;
