@@ -7,7 +7,6 @@ type ty =
 
 type binding =
   | VarBind of ty
-  | TyVarBind
 ;;
 type context = (string * binding) list;;
 
@@ -19,7 +18,6 @@ let rec getbinding ctx n = match ctx, n with
 ;;
 let getTypeFromContext ctx n = match getbinding ctx n with
   | VarBind ty1 -> ty1
-  | _ -> raise BindingError
 ;;
 
 
@@ -141,4 +139,37 @@ let rec eval t =
 ;;
 
 
+exception TypeError;;
+let rec typeof ctx = function
+  | TmVar n -> getTypeFromContext ctx n
+  | TmAbs (ty1, t2) ->
+          let ctx' = addbinding ctx (VarBind ty1) in
+          let ty2 = typeof ctx' t2 in
+          TyArrow (ty1, typeShift (-1) ty2)
+  | TmApp (t1, t2) ->
+          (match typeof ctx t1 with
+            | TyArrow (ty11, ty12) when ty11 = typeof ctx t2 -> ty12
+            | _ -> raise TypeError)
+  | TmTAbs t1 ->
+          let ty1 = typeof ctx t1 in
+          TyAll ty1
+  | TmTApp (t1, ty2) ->
+          (match typeof ctx t1 with
+            | TyArrow (_, ty11) -> typeSubstTop ty2 ty11
+            | _ -> raise TypeError)
+  | TmPack (ty1, t2, ty3) ->
+          (match ty3 with
+            | TySome ty3' ->
+                    if typeof ctx t2 = typeSubstTop ty1 ty3
+                    then ty3
+                    else raise TypeError
+            | _ -> raise TypeError)
+  | TmUnpack (t1, t2) ->
+          (match typeof ctx t1 with
+            | TySome ty1 ->
+                    let ctx' = addbinding ctx (VarBind ty1) in
+                    let ty2 = typeof ctx' t2 in
+                    typeShift (-2) ty2
+            | _ -> raise TypeError)
+;;
 
