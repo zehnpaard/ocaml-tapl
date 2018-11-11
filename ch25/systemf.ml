@@ -88,3 +88,16 @@ let termSubst j s t =
     let g j t = t in
     tmmap f g j t
 ;;
+
+let rec tytermSubst tys j t =
+    let f c x = TmVar x in
+    let g j t = typeSubst tys j t in
+    tmmap f g j t
+;;
+
+let termSubstTop s t =
+    termShift (-1) (termSubst 0 (termShift 1 s) t)
+;;
+let tytermSubstTop tys t =
+    termShift (-1) (tytermSubst (typeShift 1 tys) 0 t)
+;;
